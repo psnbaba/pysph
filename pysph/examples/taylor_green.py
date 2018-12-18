@@ -21,6 +21,8 @@ from pysph.sph.wc.kernel_correction import (
 )
 from pysph.sph.wc.crksph import CRKSPHPreStep, CRKSPH, CRKSPHScheme
 from pysph.sph.wc.gtvf import GTVFScheme
+from pysph.sph.wc.pcisph import PCISPHScheme
+from pysph.sph.wc.shift import ShiftPositions
 
 
 # domain and constants
@@ -114,6 +116,28 @@ class TaylorGreen(Application):
             default='m4', choices=remesh_types,
             help="Remeshing strategy to use."
         )
+        group.add_argument(
+            "--shift-freq", action="store", type=int, dest="shift_freq",
+            default=0,
+            help="Particle position shift frequency.(set zero to disable)."
+        )
+        shift_types = ['simple', 'fickian']
+        group.add_argument(
+            "--shift-kind", action="store", type=str, dest="shift_kind",
+            default='simple', choices=shift_types,
+            help="Use of fickian shift in positions."
+        )
+        group.add_argument(
+            "--shift-parameter", action="store", type=float,
+            dest="shift_parameter", default=None,
+            help="Constant used in shift, range for 'simple' is 0.01-0.1"
+            "range 'fickian' is 1-10."
+        )
+        group.add_argument(
+            "--shift-correct-vel", action="store_true",
+            dest="correct_vel", default=False,
+            help="Correct velocities after shifting (defaults to false)."
+        )
 
     def consume_user_options(self):
         nx = self.options.nx
@@ -126,7 +150,7 @@ class TaylorGreen(Application):
         self.hdx = self.options.hdx
 
         h0 = self.hdx * self.dx
-        if self.options.scheme == 'iisph':
+        if self.options.scheme == 'iisph' or self.options.scheme == 'pcisph':
             dt_cfl = 0.25 * h0 / U
         else:
             dt_cfl = 0.25 * h0 / (c0 + U)
@@ -148,7 +172,7 @@ class TaylorGreen(Application):
             scheme.configure(hdx=self.hdx, nu=self.nu, h0=h0)
         elif self.options.scheme == 'edac':
             scheme.configure(h=h0, nu=self.nu, pb=self.options.pb_factor * p0)
-        elif self.options.scheme == 'iisph':
+        elif self.options.scheme == 'iisph' or self.options.scheme == 'pcisph':
             scheme.configure(nu=self.nu)
             pfreq = 10
         elif self.options.scheme == 'crksph':
@@ -185,9 +209,12 @@ class TaylorGreen(Application):
             fluids=['fluid'], dim=2, rho0=rho0, c0=c0,
             nu=None, h0=None, p0=p0, pref=None
         )
+        pcisph = PCISPHScheme(
+            fluids=['fluid'], dim=2, rho0=rho0, nu=None
+        )
         s = SchemeChooser(
             default='tvf', wcsph=wcsph, tvf=tvf, edac=edac, iisph=iisph,
-            crksph=crksph, gtvf=gtvf
+            crksph=crksph, gtvf=gtvf, pcisph=pcisph
         )
         return s
 
@@ -283,6 +310,11 @@ class TaylorGreen(Application):
             for prop in ['gradai', 'bi']:
                 fluid.add_property(prop, stride=2)
 
+        if self.options.shift_freq > 0:
+            fluid.add_constant('vmax', [0.0])
+            fluid.add_property('dpos', stride=3)
+            fluid.add_property('gradv', stride=9)
+
         return [fluid]
 
     def create_tools(self):
@@ -294,7 +326,8 @@ class TaylorGreen(Application):
             else:
                 equations = None
             from pysph.solver.tools import SimpleRemesher
-            if options.scheme == 'wcsph' or options.scheme == 'crksph':
+            if options.scheme == 'wcsph' or options.scheme == 'crksph' \
+               or options.scheme == 'pcisph':
                 props = ['u', 'v', 'au', 'av', 'ax', 'ay', 'arho']
             elif options.scheme == 'tvf':
                 props = ['u', 'v', 'uhat', 'vhat',
@@ -320,6 +353,16 @@ class TaylorGreen(Application):
                 freq=self.options.remesh, equations=equations
             )
             tools.append(remesher)
+
+        if options.shift_freq > 0:
+            shift = ShiftPositions(
+                self, 'fluid', freq=self.options.shift_freq,
+                shift_kind=self.options.shift_kind,
+                correct_velocity=self.options.correct_vel,
+                parameter=self.options.shift_parameter
+            )
+            tools.append(shift)
+
         return tools
 
     # The following are all related to post-processing.
