@@ -834,22 +834,25 @@ def get_packed_particles(add_opt_func,
     else:
         from pysph.tools.packer import Packer, HexaToRectLayer
         packer = Packer(
-            None, preprocess_folder, None, add_opt_func, dx, res_file, dim=dim, 
-            x=x, y=y, z=z, L=L, B=B, H=H, filename=filename, hardpoints=hardpoints, 
-            use_prediction=use_prediction, filter_layers=filter_layers,
-            reduce_dfreq=reduce_dfreq, tol=tol, scale=scale, shift=shift, 
-            invert_normal=invert_normal, pb=pb, nu=nu, k=k, dfreq=dfreq, no_solid=no_solid
+            None, preprocess_folder, None, add_opt_func, dx, res_file,
+            dim=dim, x=x, y=y, z=z, L=L, B=B, H=H, filename=filename,
+            hardpoints=hardpoints, use_prediction=use_prediction,
+            filter_layers=filter_layers, reduce_dfreq=reduce_dfreq, tol=tol,
+            scale=scale, shift=shift, invert_normal=invert_normal, pb=pb,
+            nu=nu, k=k, dfreq=dfreq, no_solid=no_solid
         )
         packer.run()
         packer.post_process(packer.info_filename)
 
         if not no_solid:
             hextorect = HexaToRectLayer(
-                None, layer_folder, None, add_opt_func, dx, res_file, dim=dim, 
-                x=x, y=y, z=z, L=L, B=B, H=H, filename=filename, hardpoints=hardpoints, 
-                use_prediction=use_prediction, filter_layers=filter_layers,
-                reduce_dfreq=reduce_dfreq, tol=tol, scale=scale, shift=shift, 
-                invert_normal=invert_normal, pb=pb, nu=nu, k=k, dfreq=dfreq, no_solid=True
+                None, layer_folder, None, add_opt_func, dx, res_file,
+                dim=dim, x=x, y=y, z=z, L=L, B=B, H=H, filename=filename,
+                hardpoints=hardpoints, use_prediction=use_prediction,
+                filter_layers=filter_layers, reduce_dfreq=reduce_dfreq,
+                tol=tol, scale=scale, shift=shift,
+                invert_normal=invert_normal, pb=pb, nu=nu, k=k, dfreq=dfreq,
+                no_solid=True
             )
             hextorect.run()
             hextorect.post_process(hextorect.info_filename)

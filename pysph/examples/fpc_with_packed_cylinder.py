@@ -1,11 +1,11 @@
-from pysph.examples.flow_past_cylinder_2d import WindTunnel
+from pysph.examples.flow_past_cylinder_2d import windtunnel
 from pysph.base.utils import get_particle_array
 from math import sin, cos, pi
 import numpy as np
 import tempfile
 import os
 
-USE_COORDS = True
+use_coords = true
 xc, yc = [], []
 cyl_file = os.path.join(tempfile.gettempdir(), 'cylinder.txt')
 print(cyl_file)
@@ -19,13 +19,13 @@ for i in range(0, 100):
 print(xc, yc)
 fp.close()
 
-# Fluid mechanical/numerical parameters
+# fluid mechanical/numerical parameters
 rho = 1000
 umax = 1.0
 c0 = 10 * umax
 p0 = rho * c0 * c0
 
-class FPCWithPackedCylinder(WindTunnel):
+class fpcwithpackedcylinder(windtunnel):
     def _get_packed_points(self):
         '''
         returns
@@ -34,11 +34,14 @@ class FPCWithPackedCylinder(WindTunnel):
         from pysph.tools.geometry import get_packed_particles
         folder = self.output_dir
         dx = self.dx
-        if USE_COORDS:
+        if use_coords:
             return get_packed_particles(
-                self.add_user_options, folder, dx, x=np.array(xc), y=np.array(yc), shift=True)
+                self.add_user_options, folder, dx, x=np.array(xc),
+                y=np.array(yc), shift=true)
         else:
-            return get_packed_particles(self.add_user_options, folder, dx, filename=cyl_file, shift=True)
+            return get_packed_particles(
+                self.add_user_options, folder, dx, filename=cyl_file,
+                shift=True)
 
     def _create_solid(self):
         xs, ys, zs, xf, yf, zf = self._get_packed_points()
@@ -59,7 +62,8 @@ class FPCWithPackedCylinder(WindTunnel):
         L = self.Lt
         B = self.Wt * 2.0
 
-        fluid = create_fluid_around_packing(dx, xf-dx/2, yf, L, B, m=volume*rho, rho=rho, h=h0, V=1.0/volume) 
+        fluid = create_fluid_around_packing(
+            dx, xf-dx/2, yf, L, B, m=volume*rho, rho=rho, h=h0, V=1.0/volume)
 
         return fluid
 

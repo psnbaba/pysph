@@ -97,7 +97,8 @@ class Packer(Application):
             self.dim = 2
             self.z = np.zeros_like(self.x)
 
-        return get_bounding_box(self.dx, self.x, self.y, self.z, self.L, self.B, self.H)
+        return get_bounding_box(
+            self.dx, self.x, self.y, self.z, self.L, self.B, self.H)
 
     def create_particles(self):
         s = self.scheme
